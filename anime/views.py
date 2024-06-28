@@ -1,13 +1,11 @@
-from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse
-from app.settings import BASE_DIR
-from urllib.parse import unquote
-import json
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from .models.anime_model import Anime
-from .models.other_models import Genre, Voice, Timing, Subtitles
+
+from my_toos.image_data import get_image_data_anime
+from urllib.parse import unquote
+import json
 
 
 class ReleaseView(APIView):
@@ -20,11 +18,11 @@ class ReleaseView(APIView):
                 'title': anime.title,
                 'description': anime.description,
                 'episodes_number': anime.episodes_number,
+                'image_data': get_image_data_anime(Anime, anime.id),
             } for anime in anime_by_popularity
         ]
         
         return Response(output)
-
 
 
 class ScheduleView(APIView):
@@ -38,6 +36,7 @@ class ScheduleView(APIView):
                     'title': anime.title,
                     'description': anime.description[:80],
                     'episodes_number': anime.episodes_number,
+                    'image_data': get_image_data_anime(Anime, anime.id),
                 }
                 for anime in Anime.objects.filter(new_episode_every=day)
             ] for day in weekdays
@@ -68,6 +67,7 @@ class FilterView(APIView):
                 'favorites_count': anime.favorites_count,
                 'updated_at': anime.updated_at,
                 'status': anime.status,
+                'image_data': get_image_data_anime(Anime, anime.id),
                 'genres': [i.name for i in anime.genres.all()],
                 'voices': [i.name for i in anime.voices.all()],
                 'timings': [i.name for i in anime.timing.all()],
@@ -104,6 +104,7 @@ class FilterView(APIView):
                 'title': anime['title'],
                 'description': anime['description'],
                 'episodes_number': anime['episodes_number'],
+                'image_data': anime['image_data']
              } for anime in anime_list
         ]
 
