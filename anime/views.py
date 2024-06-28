@@ -57,53 +57,55 @@ class FilterView(APIView):
         #     "is_completed": true or null,  Logic for false is not exist
         # }
 
-        anime_infos = [
+        anime_list = [
             {
                 'id': anime.id,
                 'title': anime.title,
                 'description': anime.description,
                 'episodes_number': anime.episodes_number,
-                'genres': [i.name for i in anime.genres.all()],
                 'year': anime.year,
                 'season': anime.season,
                 'favorites_count': anime.favorites_count,
                 'updated_at': anime.updated_at,
                 'status': anime.status,
-
+                'genres': [i.name for i in anime.genres.all()],
+                'voices': [i.name for i in anime.voices.all()],
+                'timings': [i.name for i in anime.timing.all()],
+                'subtitles': [i.name for i in anime.subtitles.all()],
             } for anime in Anime.objects.all()
         ]
         
         req_data = unquote(request.GET.get('data'))
         req_data = json.loads(req_data)
 
-        if req_data['genres'] is not None:
+        if req_data.get('genres', None) is not None:
             result = []
-            for anime in anime_infos:
+            for anime in anime_list:
                 if all([i in anime['genres'] for i in req_data['genres']]):
                     result.append(anime)
-            anime_infos = result
+            anime_list = result
             
-        if req_data['year'] is not None:
-            anime_infos = [anime for anime in anime_infos if anime['year'] == req_data['year']]
-        if req_data['season'] is not None:
-            anime_infos = [anime for anime in anime_infos if anime['season'] == req_data['season']]
+        if req_data.get('year', None) is not None:
+            anime_list = [anime for anime in anime_list if anime['year'] == req_data['year']]
+        if req_data.get('season', None) is not None:
+            anime_list = [anime for anime in anime_list if anime['season'] == req_data['season']]
 
-        if req_data['popular_or_new'] == 'popular':
-            anime_infos.sort(key=lambda x: x['favorites_count'], reverse=True)
-        elif req_data['popular_or_new'] == 'new':
-            anime_infos.sort(key=lambda x: x['updated_at'], reverse=True)
+        if req_data.get('popular_or_new', None) == 'popular':
+            anime_list.sort(key=lambda x: x['favorites_count'], reverse=True)
+        elif req_data.get('popular_or_new', None) == 'new':
+            anime_list.sort(key=lambda x: x['updated_at'], reverse=True)
 
-        if req_data['is_completed'] == True:
-            anime_infos = [anime for anime in anime_infos if anime['status'] == 'completed']
+        if req_data.get('is_completed', None):
+            anime_list = [anime for anime in anime_list if anime['status'] == 'completed']
 
-        anime_infos = [
+        anime_list = [
             {
                 'id': anime['id'],
                 'title': anime['title'],
                 'description': anime['description'],
                 'episodes_number': anime['episodes_number'],
-             } for anime in anime_infos
+             } for anime in anime_list
         ]
 
-        return Response(anime_infos)
+        return Response(anime_list)
 
