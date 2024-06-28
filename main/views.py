@@ -1,14 +1,12 @@
-from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from urllib.parse import unquote
 from .models import YouTubeVideo
-from app.settings import BASE_DIR
+from anime.models.anime_model import Anime
 
 
 class YouTubeVideoView(APIView):
-    def get(self, request,):
+    @staticmethod
+    def get(request,):
         videos = YouTubeVideo.objects.all()
         output = [
             {
@@ -20,12 +18,16 @@ class YouTubeVideoView(APIView):
         return Response(output)
 
 
-def send_image(request, image_id):
-    image_path = get_object_or_404(YouTubeVideo, id=image_id).image.url
-    image_path = str(BASE_DIR) + image_path
-        
-    with open(image_path, 'rb') as image_file:
-        image_data = image_file.read()
-    
-    return HttpResponse(image_data, content_type='image/jpeg')
-    
+class SidePanelView(APIView):
+    @staticmethod
+    def get(request):
+        last_five_updated_anime = [i for i in Anime.objects.order_by("updated_at")][-5:]
+        output = [
+            {
+                'id': anime.id,
+                'title': anime.title,
+                'description': anime.description[:100],
+                'episodes_number': anime.episodes_number,
+            } for anime in last_five_updated_anime
+        ]
+        return Response(output)

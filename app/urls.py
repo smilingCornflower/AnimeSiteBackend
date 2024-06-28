@@ -23,5 +23,9 @@ from app import settings
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('main.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('release/', include('anime.urls')),
+    path('image/', include('image.urls')),
+]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

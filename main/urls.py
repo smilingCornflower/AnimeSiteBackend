@@ -1,8 +1,9 @@
 from django.urls import path
-from .views import YouTubeVideoView, send_image
+from .views import YouTubeVideoView, SidePanelView
+
 
 
 urlpatterns = [
     path('main_page/', YouTubeVideoView.as_view(), name='main_page'),
-    path('image/youtube/<int:image_id>/', send_image, name='youtube_image'),
+    path('side_panel/', SidePanelView.as_view(), name='side_panel'),
 ]

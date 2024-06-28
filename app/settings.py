@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'corsheaders',
     
     'main',
+    'anime',
+    'image',
 ]
 
 MIDDLEWARE = [
@@ -69,7 +71,6 @@ REST_FRAMEWORK = {
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
-
 ]
 
 
