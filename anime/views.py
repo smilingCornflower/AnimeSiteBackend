@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -21,7 +22,7 @@ class ReleaseView(APIView):
                 'image_data': get_image_data_anime(Anime, anime.id),
             } for anime in anime_by_popularity
         ]
-        
+
         return Response(output)
 
 
@@ -69,12 +70,9 @@ class FilterView(APIView):
                 'status': anime.status,
                 'image_data': get_image_data_anime(Anime, anime.id),
                 'genres': [i.name for i in anime.genres.all()],
-                'voices': [i.name for i in anime.voices.all()],
-                'timings': [i.name for i in anime.timing.all()],
-                'subtitles': [i.name for i in anime.subtitles.all()],
             } for anime in Anime.objects.all()
         ]
-        
+
         req_data = unquote(request.GET.get('data'))
         req_data = json.loads(req_data)
 
@@ -84,7 +82,7 @@ class FilterView(APIView):
                 if all([i in anime['genres'] for i in req_data['genres']]):
                     result.append(anime)
             anime_list = result
-            
+
         if req_data.get('year', None) is not None:
             anime_list = [anime for anime in anime_list if anime['year'] == req_data['year']]
         if req_data.get('season', None) is not None:
@@ -105,8 +103,32 @@ class FilterView(APIView):
                 'description': anime['description'],
                 'episodes_number': anime['episodes_number'],
                 'image_data': anime['image_data']
-             } for anime in anime_list
+            } for anime in anime_list
         ]
 
         return Response(anime_list)
 
+
+class WatchView(APIView):
+    @staticmethod
+    def get(request):
+        # It's supposed that get request is of form
+        # localhost:8000/release/watch?id=IntNumber
+        anime_id = int(request.GET.get('id'))
+        anime = get_object_or_404(Anime, id=anime_id)
+        anime_info = {
+            'id': anime.id,
+            'title': anime.title,
+            'description': anime.description,
+            'episodes_number': anime.episodes_number,
+            'year': anime.year,
+            'season': anime.season,
+            'favorites_count': anime.favorites_count,
+            'status': anime.status,
+            'image_data': get_image_data_anime(Anime, anime.id),
+            'genres': [i.name for i in anime.genres.all()],
+            'voices': [i.name for i in anime.voices.all()],
+            'timings': [i.name for i in anime.timing.all()],
+            'subtitles': [i.name for i in anime.subtitles.all()],
+        }
+        return Response(anime_info)
