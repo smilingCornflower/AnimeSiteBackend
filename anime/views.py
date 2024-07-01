@@ -3,19 +3,27 @@ from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from app.settings import BASE_DIR
+from django.http import FileResponse, StreamingHttpResponse, HttpResponse
 
-from django.http import FileResponse
+from django.core.paginator import Paginator
 from .models.anime_model import Anime
+
+import os
+import re
 
 from my_toos.image_data import get_image_data
 from urllib.parse import unquote
 import json
-import os
+
+from django.http import HttpResponse, Http404
+from django.conf import settings
+from wsgiref.util import FileWrapper
+from mimetypes import guess_type
 
 
 class ReleaseView(APIView):
     @staticmethod
-    def get(request):
+    def get(request, page_number=1):
         anime_by_popularity = Anime.objects.all().order_by('-favorites_count')
         output = [
             {
@@ -27,7 +35,10 @@ class ReleaseView(APIView):
             } for anime in anime_by_popularity
         ]
 
-        return Response(output)
+        paginator = Paginator(output, 12)
+        output_page = list(paginator.page(page_number))
+
+        return Response(output_page)
 
 
 class ScheduleView(APIView):
@@ -51,7 +62,7 @@ class ScheduleView(APIView):
 
 class FilterView(APIView):
     @staticmethod
-    def get(request):
+    def get(request, page_number=1):
         # It's supposed that get request is of form
         # localhost: 8000 / release / filter?data = {
         #     "genres": [genre1, genre2, ...] or null,
@@ -77,8 +88,11 @@ class FilterView(APIView):
             } for anime in Anime.objects.all()
         ]
 
-        req_data = unquote(request.GET.get('data'))
-        req_data = json.loads(req_data)
+        req_data = request.GET.get('data')
+        if req_data is not None:
+            req_data = json.loads(unquote(req_data))
+        else:
+            req_data = {}
 
         if req_data.get('genres', None) is not None:
             result = []
@@ -110,7 +124,10 @@ class FilterView(APIView):
             } for anime in anime_list
         ]
 
-        return Response(anime_list)
+        paginator = Paginator(anime_list, 9)
+        output_page = list(paginator.page(page_number))
+
+        return Response(output_page)
 
 
 class WatchView(APIView):
@@ -138,8 +155,39 @@ class WatchView(APIView):
         return Response(anime_info)
 
 
-def watch_episode(request, anime_id: str, episode_number: str):
-    episode_path = os.path.join(BASE_DIR, f'media/{anime_id}/{episode_number}.mp4')
+def watch_episode(request, anime_id: int, episode_number: str):
+    episode_path = os.path.join(settings.MEDIA_ROOT, f"{anime_id}/{episode_number}.mp4")
 
-    episode_file = open(episode_path, 'rb')
-    return FileResponse(episode_file, content_type='video/mp4')
+    if not os.path.exists(episode_path):
+        return Http404("File not found")
+
+    size = os.path.getsize(episode_path)
+    content_type, content_encoding = guess_type(episode_path)
+
+    range_header = request.headers.get("Range", "").strip()
+    range_match = re.match(r'bytes=([0-9]+)-([0-9]*)', range_header)
+
+    if range_match:
+        first_byte, last_byte = range_match.groups()
+        first_byte = int(first_byte) if first_byte else 0
+        last_byte = int(last_byte) if last_byte else size - 1
+
+        if last_byte > size:
+            last_byte = size - 1
+
+        with open(episode_path, 'rb') as episode_file:
+            episode_file.seek(first_byte)
+            content_length = last_byte - first_byte + 1
+            wrapper = FileWrapper(episode_file, blksize=16384)
+            response = HttpResponse(wrapper, content_type=content_type)
+            response['Content-Length'] = str(content_length)
+            response['Content-Range'] = f'bytes {first_byte}-{last_byte}/{size}'
+            response['Accept-Ranges'] = 'bytes'
+    else:
+        response = HttpResponse(open(episode_path, 'rb'), content_type=content_type)
+        response['Content-Length'] = str(size)
+        response['Accept-Ranges'] = 'bytes'
+
+    return response
+
+

@@ -1,0 +1,66 @@
+localhost:8000/main_page/
+[
+    {
+        "id": int,
+        "title": string,
+        "url": string,
+        "image_data": string,   // base64
+    }
+]
+
+http://localhost:8000/side_panel/
+[
+    {
+        "id": int,
+        "title": string,
+        "description": string,
+        "episodes_number": int,
+        "image_data": string,   // base64
+    }
+]
+
+http://localhost:8000/release/watch/<anime_id:int>
+[
+    {
+        "id": 1,
+        "title": string,
+        "description": string,
+        "episodes_number": int,
+        "year": int,
+        "season": string,       // seasons = ["summer", "autumn", "spring", "winter"]
+        "favorites_count": int,
+        "status": string,       // statuses = ["completed", "ongoing", "announcement"]
+        "image_data": string,   // base64
+        "genres": array[string],
+        "voices": array[string],
+        "timings": array[string],
+        "subtitles": array[string],
+    }
+]
+
+http://localhost:8000/release/watch/<anime_id:int>/<episode_id:int>/
+    FileResponse in mp4 format
+    For testing - http://localhost:8000/release/watch/1/0
+
+
+
+localhost:8000/release/filter?data={
+    "genres": ["genre1", "genre2", ...] or null,
+    "year": int or null,
+    "season": string,               // seasons = ["summer", "autumn", "spring", "winter"]
+    "popular_or_new": "popular" or "new" or null,
+    "is_completed": true or null,       // logic for false is not exist
+}
+
+[
+    {
+        "id": int,
+        "title": string,
+        "description": string,
+        "episodes_number": int,
+        "image_data": string,   // base64
+    }
+]
+
+for test
+localhost:8000/release/filter?data={"genres": ["Экшен"],"year": null,"season": null,"popular_or_new": "new","is_completed":true}
