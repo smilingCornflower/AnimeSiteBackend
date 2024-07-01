@@ -1,12 +1,16 @@
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from app.settings import BASE_DIR
 
+from django.http import FileResponse
 from .models.anime_model import Anime
 
-from my_toos.image_data import get_image_data_anime
+from my_toos.image_data import get_image_data
 from urllib.parse import unquote
 import json
+import os
 
 
 class ReleaseView(APIView):
@@ -19,7 +23,7 @@ class ReleaseView(APIView):
                 'title': anime.title,
                 'description': anime.description,
                 'episodes_number': anime.episodes_number,
-                'image_data': get_image_data_anime(Anime, anime.id),
+                'image_data': get_image_data(Anime, anime.id),
             } for anime in anime_by_popularity
         ]
 
@@ -37,7 +41,7 @@ class ScheduleView(APIView):
                     'title': anime.title,
                     'description': anime.description[:80],
                     'episodes_number': anime.episodes_number,
-                    'image_data': get_image_data_anime(Anime, anime.id),
+                    'image_data': get_image_data(Anime, anime.id),
                 }
                 for anime in Anime.objects.filter(new_episode_every=day)
             ] for day in weekdays
@@ -68,7 +72,7 @@ class FilterView(APIView):
                 'favorites_count': anime.favorites_count,
                 'updated_at': anime.updated_at,
                 'status': anime.status,
-                'image_data': get_image_data_anime(Anime, anime.id),
+                'image_data': get_image_data(Anime, anime.id),
                 'genres': [i.name for i in anime.genres.all()],
             } for anime in Anime.objects.all()
         ]
@@ -111,10 +115,10 @@ class FilterView(APIView):
 
 class WatchView(APIView):
     @staticmethod
-    def get(request):
+    def get(request, anime_id):
         # It's supposed that get request is of form
         # localhost:8000/release/watch?id=IntNumber
-        anime_id = int(request.GET.get('id'))
+        # anime_id = int(request.GET.get('id'))
         anime = get_object_or_404(Anime, id=anime_id)
         anime_info = {
             'id': anime.id,
@@ -125,10 +129,17 @@ class WatchView(APIView):
             'season': anime.season,
             'favorites_count': anime.favorites_count,
             'status': anime.status,
-            'image_data': get_image_data_anime(Anime, anime.id),
+            'image_data': get_image_data(Anime, anime.id),
             'genres': [i.name for i in anime.genres.all()],
             'voices': [i.name for i in anime.voices.all()],
             'timings': [i.name for i in anime.timing.all()],
             'subtitles': [i.name for i in anime.subtitles.all()],
         }
         return Response(anime_info)
+
+
+def watch_episode(request, anime_id: str, episode_number: str):
+    episode_path = os.path.join(BASE_DIR, f'media/{anime_id}/{episode_number}.mp4')
+
+    episode_file = open(episode_path, 'rb')
+    return FileResponse(episode_file, content_type='video/mp4')

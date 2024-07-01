@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from .models import YouTubeVideo
 from anime.models.anime_model import Anime
 
-from my_toos.image_data import get_image_data_youtube, get_image_data_anime
+from my_toos.image_data import get_image_data
 
 
 class YouTubeVideoView(APIView):
@@ -15,7 +15,7 @@ class YouTubeVideoView(APIView):
                 'id': item.id,
                 'title': item.title,
                 'url': item.url,
-                'image_data': get_image_data_youtube(YouTubeVideo, img_id=item.id),
+                'image_data': get_image_data(YouTubeVideo, img_id=item.id),
             } for item in videos
         ]
         return Response(output)
@@ -31,7 +31,7 @@ class SidePanelView(APIView):
                 'title': anime.title,
                 'description': anime.description[:100],
                 'episodes_number': anime.episodes_number,
-                'image_data': get_image_data_anime(Anime, img_id=anime.id),
+                'image_data': get_image_data(Anime, img_id=anime.id),
             } for anime in last_five_updated_anime
         ]
         return Response(output)
